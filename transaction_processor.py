@@ -50,6 +50,7 @@ class LamassuTransactionProcessor:
         self.processed_transaction_ids = set()
         self.ssh_process = None
         self.ssh_key_path = None
+        self.ssh_config_path = None
     
     async def get_db_config(self) -> Optional[Dict[str, Any]]:
         """Get database configuration from the database"""
@@ -117,7 +118,9 @@ class LamassuTransactionProcessor:
             "-p", str(db_config['ssh_port']),
             "-o", "StrictHostKeyChecking=no",
             "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "LogLevel=ERROR"
+            "-o", "LogLevel=ERROR",
+            "-o", "ConnectTimeout=10",
+            "-o", "ServerAliveInterval=60"
         ]
         
         # Add authentication method
@@ -131,18 +134,62 @@ class LamassuTransactionProcessor:
                 logger.error("Password authentication requires 'sshpass' tool which is not installed. Please use SSH key authentication instead.")
                 return None
         elif db_config.get("ssh_private_key"):
-            # Write private key to temporary file
+            # Write private key and SSH config to temporary files
             import tempfile
             import os
             key_fd, key_path = tempfile.mkstemp(suffix='.pem')
+            config_fd, config_path = tempfile.mkstemp(suffix='.ssh_config')
             try:
-                with os.fdopen(key_fd, 'w') as f:
-                    f.write(db_config["ssh_private_key"])
+                # Prepare key content with proper line endings and final newline
+                key_data = db_config["ssh_private_key"]
+                key_data = key_data.replace('\r\n', '\n').replace('\r', '\n')  # Normalize line endings
+                if not key_data.endswith('\n'):
+                    key_data += '\n'  # Ensure newline at end of file
+
+                with os.fdopen(key_fd, 'w', encoding='utf-8') as f:
+                    f.write(key_data)
+
                 os.chmod(key_path, 0o600)
-                ssh_cmd.extend(["-i", key_path])
+
+                # Create temporary SSH config file with strict settings
+                ssh_config = f"""Host {db_config['ssh_host']}
+    HostName {db_config['ssh_host']}
+    Port {db_config['ssh_port']}
+    User {db_config['ssh_username']}
+    IdentityFile {key_path}
+    IdentitiesOnly yes
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+    PreferredAuthentications publickey
+    NumberOfPasswordPrompts 0
+    IdentityAgent none
+    ControlMaster no
+    ControlPath none
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel ERROR
+    ConnectTimeout 10
+    ServerAliveInterval 60
+"""
+                
+                with os.fdopen(config_fd, 'w', encoding='utf-8') as f:
+                    f.write(ssh_config)
+                
+                os.chmod(config_path, 0o600)
+
+                # Use the custom config file
+                ssh_cmd.extend([
+                    "-F", config_path,
+                    db_config['ssh_host']
+                ])
+                print(ssh_cmd)
+
                 self.ssh_key_path = key_path  # Store for cleanup
+                self.ssh_config_path = config_path  # Store for cleanup
             except Exception as e:
                 os.unlink(key_path)
+                if 'config_path' in locals():
+                    os.unlink(config_path)
                 raise e
         else:
             logger.error("SSH tunnel requires either private key or password")
@@ -208,6 +255,17 @@ class LamassuTransactionProcessor:
                 logger.warning(f"Error cleaning up SSH key file: {e}")
             finally:
                 self.ssh_key_path = None
+        
+        # Clean up temporary SSH config file if exists
+        if hasattr(self, 'ssh_config_path') and self.ssh_config_path:
+            try:
+                import os
+                os.unlink(self.ssh_config_path)
+                logger.info("SSH config file cleaned up")
+            except Exception as e:
+                logger.warning(f"Error cleaning up SSH config file: {e}")
+            finally:
+                self.ssh_config_path = None
     
     async def test_connection_detailed(self) -> Dict[str, Any]:
         """Test connection with detailed step-by-step reporting"""
@@ -360,11 +418,49 @@ class LamassuTransactionProcessor:
                 import tempfile
                 import os
                 key_fd, key_path = tempfile.mkstemp(suffix='.pem')
+                config_fd, config_path = tempfile.mkstemp(suffix='.ssh_config')
                 try:
-                    with os.fdopen(key_fd, 'w') as f:
-                        f.write(db_config["ssh_private_key"])
+                    # Prepare key content with proper line endings and final newline
+                    key_data = db_config["ssh_private_key"]
+                    key_data = key_data.replace('\r\n', '\n').replace('\r', '\n')  # Normalize line endings
+                    if not key_data.endswith('\n'):
+                        key_data += '\n'  # Ensure newline at end of file
+
+                    with os.fdopen(key_fd, 'w', encoding='utf-8') as f:
+                        f.write(key_data)
                     os.chmod(key_path, 0o600)
-                    ssh_cmd.extend(["-i", key_path])
+
+                    # Create temporary SSH config file with strict settings
+                    ssh_config = f"""Host {db_config['ssh_host']}
+    HostName {db_config['ssh_host']}
+    Port {db_config['ssh_port']}
+    User {db_config['ssh_username']}
+    IdentityFile {key_path}
+    IdentitiesOnly yes
+    PasswordAuthentication no
+    PubkeyAuthentication yes
+    PreferredAuthentications publickey
+    NumberOfPasswordPrompts 0
+    IdentityAgent none
+    ControlMaster no
+    ControlPath none
+    StrictHostKeyChecking no
+    UserKnownHostsFile /dev/null
+    LogLevel ERROR
+    ConnectTimeout 10
+    ServerAliveInterval 60
+"""
+                    
+                    with os.fdopen(config_fd, 'w', encoding='utf-8') as f:
+                        f.write(ssh_config)
+                    os.chmod(config_path, 0o600)
+
+                    # Use the custom config file
+                    ssh_cmd = [
+                        "ssh",
+                        "-F", config_path,
+                        db_config['ssh_host']
+                    ]
                     
                     # Build the psql command to return JSON
                     psql_cmd = f"psql {db_config['database']} -t -c \"COPY ({query}) TO STDOUT WITH CSV HEADER\""
@@ -416,6 +512,8 @@ class LamassuTransactionProcessor:
                     
                 finally:
                     os.unlink(key_path)
+                    if 'config_path' in locals():
+                        os.unlink(config_path)
                     
             else:
                 logger.error("SSH private key required for database queries")
