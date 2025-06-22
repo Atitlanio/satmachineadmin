@@ -67,6 +67,7 @@ class CreateDcaPaymentData(BaseModel):
     transaction_type: str  # 'flow', 'fixed', 'manual', 'commission'
     lamassu_transaction_id: Optional[str] = None
     payment_hash: Optional[str] = None
+    transaction_time: Optional[datetime] = None  # Original ATM transaction time
 
 
 class DcaPayment(BaseModel):
@@ -80,6 +81,7 @@ class DcaPayment(BaseModel):
     payment_hash: Optional[str]
     status: str  # 'pending', 'confirmed', 'failed'
     created_at: datetime
+    transaction_time: Optional[datetime] = None  # Original ATM transaction time
 
 
 # Client Balance Summary

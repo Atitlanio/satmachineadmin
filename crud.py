@@ -160,9 +160,9 @@ async def create_dca_payment(data: CreateDcaPaymentData) -> DcaPayment:
         """
         INSERT INTO satmachineadmin.dca_payments 
         (id, client_id, amount_sats, amount_fiat, exchange_rate, transaction_type, 
-         lamassu_transaction_id, payment_hash, status, created_at)
+         lamassu_transaction_id, payment_hash, status, created_at, transaction_time)
         VALUES (:id, :client_id, :amount_sats, :amount_fiat, :exchange_rate, :transaction_type,
-                :lamassu_transaction_id, :payment_hash, :status, :created_at)
+                :lamassu_transaction_id, :payment_hash, :status, :created_at, :transaction_time)
         """,
         {
             "id": payment_id,
@@ -174,7 +174,8 @@ async def create_dca_payment(data: CreateDcaPaymentData) -> DcaPayment:
             "lamassu_transaction_id": data.lamassu_transaction_id,
             "payment_hash": data.payment_hash,
             "status": "pending",
-            "created_at": datetime.now()
+            "created_at": datetime.now(),
+            "transaction_time": data.transaction_time
         }
     )
     return await get_dca_payment(payment_id)

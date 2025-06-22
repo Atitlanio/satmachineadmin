@@ -111,3 +111,15 @@ async def m001_initial_dca_schema(db):
         );
         """
     )
+
+
+async def m002_add_transaction_time_to_dca_payments(db):
+    """
+    Add transaction_time field to dca_payments table to store original ATM transaction time
+    """
+    await db.execute(
+        """
+        ALTER TABLE satmachineadmin.dca_payments 
+        ADD COLUMN transaction_time TIMESTAMP
+        """
+    )

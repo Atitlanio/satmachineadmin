@@ -609,7 +609,8 @@ class LamassuTransactionProcessor:
                         amount_fiat=distribution["fiat_amount"],
                         exchange_rate=distribution["exchange_rate"],
                         transaction_type="flow",
-                        lamassu_transaction_id=transaction_id
+                        lamassu_transaction_id=transaction_id,
+                        transaction_time=transaction.get("transaction_time")  # Original ATM transaction time
                     )
                     
                     # Record the payment in our database
