@@ -166,7 +166,7 @@ window.app = Vue.createApp({
         const {data} = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/config',
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         this.lamassuConfig = data
         
@@ -254,7 +254,7 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/clients',
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         
         // Fetch balance data for each client
@@ -264,7 +264,7 @@ window.app = Vue.createApp({
               const { data: balance } = await LNbits.api.request(
                 'GET',
                 `/satmachineadmin/api/v1/dca/clients/${client.id}/balance`,
-                this.g.user.wallets[0].inkey
+                this.g.user.wallets[0].adminkey
               )
               return {
                 ...client,
@@ -356,7 +356,7 @@ window.app = Vue.createApp({
         const { data: balance } = await LNbits.api.request(
           'GET',
           `/satmachineadmin/api/v1/dca/clients/${client.id}/balance`,
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         this.clientDetailsDialog.data = client
         this.clientDetailsDialog.balance = balance
@@ -372,7 +372,7 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/deposits',
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         this.deposits = data
       } catch (error) {
@@ -617,7 +617,7 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/transactions',
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         this.lamassuTransactions = data
       } catch (error) {
@@ -630,7 +630,7 @@ window.app = Vue.createApp({
         const { data: distributions } = await LNbits.api.request(
           'GET',
           `/satmachineadmin/api/v1/dca/transactions/${transaction.id}/distributions`,
-          this.g.user.wallets[0].inkey
+          this.g.user.wallets[0].adminkey
         )
         
         this.distributionDialog.transaction = transaction
