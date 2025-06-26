@@ -15,7 +15,7 @@ from .models import (
     CreateLamassuTransactionData, StoredLamassuTransaction
 )
 
-db = Database("ext_satmachineadmin")
+db = Database("ext_satoshimachine")
 
 
 # DCA Client CRUD Operations
@@ -23,7 +23,7 @@ async def create_dca_client(data: CreateDcaClientData) -> DcaClient:
     client_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO satmachineadmin.dca_clients 
+        INSERT INTO satoshimachine.dca_clients 
         (id, user_id, wallet_id, username, dca_mode, fixed_mode_daily_limit, status, created_at, updated_at)
         VALUES (:id, :user_id, :wallet_id, :username, :dca_mode, :fixed_mode_daily_limit, :status, :created_at, :updated_at)
         """,
@@ -44,7 +44,7 @@ async def create_dca_client(data: CreateDcaClientData) -> DcaClient:
 
 async def get_dca_client(client_id: str) -> Optional[DcaClient]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.dca_clients WHERE id = :id",
+        "SELECT * FROM satoshimachine.dca_clients WHERE id = :id",
         {"id": client_id},
         DcaClient,
     )
@@ -52,14 +52,14 @@ async def get_dca_client(client_id: str) -> Optional[DcaClient]:
 
 async def get_dca_clients() -> List[DcaClient]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_clients ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.dca_clients ORDER BY created_at DESC",
         model=DcaClient,
     )
 
 
 async def get_dca_client_by_user(user_id: str) -> Optional[DcaClient]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.dca_clients WHERE user_id = :user_id",
+        "SELECT * FROM satoshimachine.dca_clients WHERE user_id = :user_id",
         {"user_id": user_id},
         DcaClient,
     )
@@ -75,7 +75,7 @@ async def update_dca_client(client_id: str, data: UpdateDcaClientData) -> Option
     update_data["id"] = client_id
     
     await db.execute(
-        f"UPDATE satmachineadmin.dca_clients SET {set_clause} WHERE id = :id",
+        f"UPDATE satoshimachine.dca_clients SET {set_clause} WHERE id = :id",
         update_data
     )
     return await get_dca_client(client_id)
@@ -83,7 +83,7 @@ async def update_dca_client(client_id: str, data: UpdateDcaClientData) -> Option
 
 async def delete_dca_client(client_id: str) -> None:
     await db.execute(
-        "DELETE FROM satmachineadmin.dca_clients WHERE id = :id", 
+        "DELETE FROM satoshimachine.dca_clients WHERE id = :id", 
         {"id": client_id}
     )
 
@@ -93,7 +93,7 @@ async def create_deposit(data: CreateDepositData) -> DcaDeposit:
     deposit_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO satmachineadmin.dca_deposits 
+        INSERT INTO satoshimachine.dca_deposits 
         (id, client_id, amount, currency, status, notes, created_at)
         VALUES (:id, :client_id, :amount, :currency, :status, :notes, :created_at)
         """,
@@ -112,7 +112,7 @@ async def create_deposit(data: CreateDepositData) -> DcaDeposit:
 
 async def get_deposit(deposit_id: str) -> Optional[DcaDeposit]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.dca_deposits WHERE id = :id",
+        "SELECT * FROM satoshimachine.dca_deposits WHERE id = :id",
         {"id": deposit_id},
         DcaDeposit,
     )
@@ -120,7 +120,7 @@ async def get_deposit(deposit_id: str) -> Optional[DcaDeposit]:
 
 async def get_deposits_by_client(client_id: str) -> List[DcaDeposit]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_deposits WHERE client_id = :client_id ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.dca_deposits WHERE client_id = :client_id ORDER BY created_at DESC",
         {"client_id": client_id},
         DcaDeposit,
     )
@@ -128,7 +128,7 @@ async def get_deposits_by_client(client_id: str) -> List[DcaDeposit]:
 
 async def get_all_deposits() -> List[DcaDeposit]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_deposits ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.dca_deposits ORDER BY created_at DESC",
         model=DcaDeposit,
     )
 
@@ -147,7 +147,7 @@ async def update_deposit_status(deposit_id: str, data: UpdateDepositStatusData) 
     filtered_data["id"] = deposit_id
     
     await db.execute(
-        f"UPDATE satmachineadmin.dca_deposits SET {set_clause} WHERE id = :id",
+        f"UPDATE satoshimachine.dca_deposits SET {set_clause} WHERE id = :id",
         filtered_data
     )
     return await get_deposit(deposit_id)
@@ -158,7 +158,7 @@ async def create_dca_payment(data: CreateDcaPaymentData) -> DcaPayment:
     payment_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO satmachineadmin.dca_payments 
+        INSERT INTO satoshimachine.dca_payments 
         (id, client_id, amount_sats, amount_fiat, exchange_rate, transaction_type, 
          lamassu_transaction_id, payment_hash, status, created_at, transaction_time)
         VALUES (:id, :client_id, :amount_sats, :amount_fiat, :exchange_rate, :transaction_type,
@@ -183,7 +183,7 @@ async def create_dca_payment(data: CreateDcaPaymentData) -> DcaPayment:
 
 async def get_dca_payment(payment_id: str) -> Optional[DcaPayment]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.dca_payments WHERE id = :id",
+        "SELECT * FROM satoshimachine.dca_payments WHERE id = :id",
         {"id": payment_id},
         DcaPayment,
     )
@@ -191,7 +191,7 @@ async def get_dca_payment(payment_id: str) -> Optional[DcaPayment]:
 
 async def get_payments_by_client(client_id: str) -> List[DcaPayment]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_payments WHERE client_id = :client_id ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.dca_payments WHERE client_id = :client_id ORDER BY created_at DESC",
         {"client_id": client_id},
         DcaPayment,
     )
@@ -199,7 +199,7 @@ async def get_payments_by_client(client_id: str) -> List[DcaPayment]:
 
 async def get_all_payments() -> List[DcaPayment]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_payments ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.dca_payments ORDER BY created_at DESC",
         model=DcaPayment,
     )
 
@@ -207,14 +207,14 @@ async def get_all_payments() -> List[DcaPayment]:
 async def update_dca_payment_status(payment_id: str, status: str) -> None:
     """Update the status of a DCA payment"""
     await db.execute(
-        "UPDATE satmachineadmin.dca_payments SET status = :status WHERE id = :id",
+        "UPDATE satoshimachine.dca_payments SET status = :status WHERE id = :id",
         {"status": status, "id": payment_id}
     )
 
 
 async def get_payments_by_lamassu_transaction(lamassu_transaction_id: str) -> List[DcaPayment]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_payments WHERE lamassu_transaction_id = :transaction_id",
+        "SELECT * FROM satoshimachine.dca_payments WHERE lamassu_transaction_id = :transaction_id",
         {"transaction_id": lamassu_transaction_id},
         DcaPayment,
     )
@@ -226,7 +226,7 @@ async def get_client_balance_summary(client_id: str) -> ClientBalanceSummary:
     total_deposits_result = await db.fetchone(
         """
         SELECT COALESCE(SUM(amount), 0) as total, currency 
-        FROM satmachineadmin.dca_deposits 
+        FROM satoshimachine.dca_deposits 
         WHERE client_id = :client_id AND status = 'confirmed'
         GROUP BY currency
         """,
@@ -237,7 +237,7 @@ async def get_client_balance_summary(client_id: str) -> ClientBalanceSummary:
     total_payments_result = await db.fetchone(
         """
         SELECT COALESCE(SUM(amount_fiat), 0) as total 
-        FROM satmachineadmin.dca_payments 
+        FROM satoshimachine.dca_payments 
         WHERE client_id = :client_id AND status = 'confirmed'
         """,
         {"client_id": client_id}
@@ -258,14 +258,14 @@ async def get_client_balance_summary(client_id: str) -> ClientBalanceSummary:
 
 async def get_flow_mode_clients() -> List[DcaClient]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_clients WHERE dca_mode = 'flow' AND status = 'active'",
+        "SELECT * FROM satoshimachine.dca_clients WHERE dca_mode = 'flow' AND status = 'active'",
         model=DcaClient,
     )
 
 
 async def get_fixed_mode_clients() -> List[DcaClient]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.dca_clients WHERE dca_mode = 'fixed' AND status = 'active'",
+        "SELECT * FROM satoshimachine.dca_clients WHERE dca_mode = 'fixed' AND status = 'active'",
         model=DcaClient,
     )
 
@@ -276,13 +276,13 @@ async def create_lamassu_config(data: CreateLamassuConfigData) -> LamassuConfig:
     
     # Deactivate any existing configs first (only one active config allowed)
     await db.execute(
-        "UPDATE satmachineadmin.lamassu_config SET is_active = false, updated_at = :updated_at",
+        "UPDATE satoshimachine.lamassu_config SET is_active = false, updated_at = :updated_at",
         {"updated_at": datetime.now()}
     )
     
     await db.execute(
         """
-        INSERT INTO satmachineadmin.lamassu_config 
+        INSERT INTO satoshimachine.lamassu_config 
         (id, host, port, database_name, username, password, source_wallet_id, commission_wallet_id, is_active, created_at, updated_at,
          use_ssh_tunnel, ssh_host, ssh_port, ssh_username, ssh_password, ssh_private_key)
         VALUES (:id, :host, :port, :database_name, :username, :password, :source_wallet_id, :commission_wallet_id, :is_active, :created_at, :updated_at,
@@ -313,7 +313,7 @@ async def create_lamassu_config(data: CreateLamassuConfigData) -> LamassuConfig:
 
 async def get_lamassu_config(config_id: str) -> Optional[LamassuConfig]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.lamassu_config WHERE id = :id",
+        "SELECT * FROM satoshimachine.lamassu_config WHERE id = :id",
         {"id": config_id},
         LamassuConfig,
     )
@@ -321,14 +321,14 @@ async def get_lamassu_config(config_id: str) -> Optional[LamassuConfig]:
 
 async def get_active_lamassu_config() -> Optional[LamassuConfig]:
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.lamassu_config WHERE is_active = true ORDER BY created_at DESC LIMIT 1",
+        "SELECT * FROM satoshimachine.lamassu_config WHERE is_active = true ORDER BY created_at DESC LIMIT 1",
         model=LamassuConfig,
     )
 
 
 async def get_all_lamassu_configs() -> List[LamassuConfig]:
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.lamassu_config ORDER BY created_at DESC",
+        "SELECT * FROM satoshimachine.lamassu_config ORDER BY created_at DESC",
         model=LamassuConfig,
     )
 
@@ -343,7 +343,7 @@ async def update_lamassu_config(config_id: str, data: UpdateLamassuConfigData) -
     update_data["id"] = config_id
     
     await db.execute(
-        f"UPDATE satmachineadmin.lamassu_config SET {set_clause} WHERE id = :id",
+        f"UPDATE satoshimachine.lamassu_config SET {set_clause} WHERE id = :id",
         update_data
     )
     return await get_lamassu_config(config_id)
@@ -353,7 +353,7 @@ async def update_config_test_result(config_id: str, success: bool) -> None:
     utc_now = datetime.now(timezone.utc)
     await db.execute(
         """
-        UPDATE satmachineadmin.lamassu_config 
+        UPDATE satoshimachine.lamassu_config 
         SET test_connection_last = :test_time, test_connection_success = :success, updated_at = :updated_at
         WHERE id = :id
         """,
@@ -368,7 +368,7 @@ async def update_config_test_result(config_id: str, success: bool) -> None:
 
 async def delete_lamassu_config(config_id: str) -> None:
     await db.execute(
-        "DELETE FROM satmachineadmin.lamassu_config WHERE id = :id", 
+        "DELETE FROM satoshimachine.lamassu_config WHERE id = :id", 
         {"id": config_id}
     )
 
@@ -378,7 +378,7 @@ async def update_poll_start_time(config_id: str) -> None:
     utc_now = datetime.now(timezone.utc)
     await db.execute(
         """
-        UPDATE satmachineadmin.lamassu_config 
+        UPDATE satoshimachine.lamassu_config 
         SET last_poll_time = :poll_time, updated_at = :updated_at
         WHERE id = :id
         """,
@@ -395,7 +395,7 @@ async def update_poll_success_time(config_id: str) -> None:
     utc_now = datetime.now(timezone.utc)
     await db.execute(
         """
-        UPDATE satmachineadmin.lamassu_config 
+        UPDATE satoshimachine.lamassu_config 
         SET last_successful_poll = :poll_time, updated_at = :updated_at
         WHERE id = :id
         """,
@@ -413,7 +413,7 @@ async def create_lamassu_transaction(data: CreateLamassuTransactionData) -> Stor
     transaction_id = urlsafe_short_hash()
     await db.execute(
         """
-        INSERT INTO satmachineadmin.lamassu_transactions 
+        INSERT INTO satoshimachine.lamassu_transactions 
         (id, lamassu_transaction_id, fiat_amount, crypto_amount, commission_percentage, 
          discount, effective_commission, commission_amount_sats, base_amount_sats, 
          exchange_rate, crypto_code, fiat_code, device_id, transaction_time, processed_at,
@@ -449,7 +449,7 @@ async def create_lamassu_transaction(data: CreateLamassuTransactionData) -> Stor
 async def get_lamassu_transaction(transaction_id: str) -> Optional[StoredLamassuTransaction]:
     """Get a stored Lamassu transaction by ID"""
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.lamassu_transactions WHERE id = :id",
+        "SELECT * FROM satoshimachine.lamassu_transactions WHERE id = :id",
         {"id": transaction_id},
         StoredLamassuTransaction,
     )
@@ -458,7 +458,7 @@ async def get_lamassu_transaction(transaction_id: str) -> Optional[StoredLamassu
 async def get_lamassu_transaction_by_lamassu_id(lamassu_transaction_id: str) -> Optional[StoredLamassuTransaction]:
     """Get a stored Lamassu transaction by Lamassu transaction ID"""
     return await db.fetchone(
-        "SELECT * FROM satmachineadmin.lamassu_transactions WHERE lamassu_transaction_id = :lamassu_id",
+        "SELECT * FROM satoshimachine.lamassu_transactions WHERE lamassu_transaction_id = :lamassu_id",
         {"lamassu_id": lamassu_transaction_id},
         StoredLamassuTransaction,
     )
@@ -467,7 +467,7 @@ async def get_lamassu_transaction_by_lamassu_id(lamassu_transaction_id: str) -> 
 async def get_all_lamassu_transactions() -> List[StoredLamassuTransaction]:
     """Get all stored Lamassu transactions"""
     return await db.fetchall(
-        "SELECT * FROM satmachineadmin.lamassu_transactions ORDER BY transaction_time DESC",
+        "SELECT * FROM satoshimachine.lamassu_transactions ORDER BY transaction_time DESC",
         model=StoredLamassuTransaction,
     )
 
@@ -480,7 +480,7 @@ async def update_lamassu_transaction_distribution_stats(
     """Update distribution statistics for a Lamassu transaction"""
     await db.execute(
         """
-        UPDATE satmachineadmin.lamassu_transactions 
+        UPDATE satoshimachine.lamassu_transactions 
         SET clients_count = :clients_count, distributions_total_sats = :distributions_total_sats 
         WHERE id = :id
         """,
