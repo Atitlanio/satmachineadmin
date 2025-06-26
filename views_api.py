@@ -5,9 +5,9 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, Request
 from lnbits.core.crud import get_user
-from lnbits.core.models import WalletTypeInfo
+from lnbits.core.models import User, WalletTypeInfo
 from lnbits.core.services import create_invoice
-from lnbits.decorators import require_admin_key
+from lnbits.decorators import check_super_user
 from starlette.exceptions import HTTPException
 
 from .crud import (
@@ -59,7 +59,7 @@ satmachineadmin_api_router = APIRouter()
 
 @satmachineadmin_api_router.get("/api/v1/dca/clients")
 async def api_get_dca_clients(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> list[DcaClient]:
     """Get all DCA clients"""
     return await get_dca_clients()
@@ -68,7 +68,7 @@ async def api_get_dca_clients(
 @satmachineadmin_api_router.get("/api/v1/dca/clients/{client_id}")
 async def api_get_dca_client(
     client_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> DcaClient:
     """Get a specific DCA client"""
     client = await get_dca_client(client_id)
@@ -83,12 +83,10 @@ async def api_get_dca_client(
 # Admin extension only reads existing clients and manages their deposits
 
 
-
-
 @satmachineadmin_api_router.get("/api/v1/dca/clients/{client_id}/balance")
 async def api_get_client_balance(
     client_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> ClientBalanceSummary:
     """Get client balance summary"""
     client = await get_dca_client(client_id)
@@ -105,7 +103,7 @@ async def api_get_client_balance(
 
 @satmachineadmin_api_router.get("/api/v1/dca/deposits")
 async def api_get_deposits(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> list[DcaDeposit]:
     """Get all deposits"""
     return await get_all_deposits()
@@ -114,7 +112,7 @@ async def api_get_deposits(
 @satmachineadmin_api_router.get("/api/v1/dca/deposits/{deposit_id}")
 async def api_get_deposit(
     deposit_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> DcaDeposit:
     """Get a specific deposit"""
     deposit = await get_deposit(deposit_id)
@@ -128,7 +126,7 @@ async def api_get_deposit(
 @satmachineadmin_api_router.post("/api/v1/dca/deposits", status_code=HTTPStatus.CREATED)
 async def api_create_deposit(
     data: CreateDepositData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ) -> DcaDeposit:
     """Create a new deposit"""
     # Verify client exists
@@ -145,7 +143,7 @@ async def api_create_deposit(
 async def api_update_deposit_status(
     deposit_id: str,
     data: UpdateDepositStatusData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ) -> DcaDeposit:
     """Update deposit status (e.g., confirm deposit)"""
     deposit = await get_deposit(deposit_id)
@@ -168,7 +166,7 @@ async def api_update_deposit_status(
 
 @satmachineadmin_api_router.post("/api/v1/dca/test-connection")
 async def api_test_database_connection(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ):
     """Test connection to Lamassu database with detailed reporting"""
     try:
@@ -191,7 +189,7 @@ async def api_test_database_connection(
 
 @satmachineadmin_api_router.post("/api/v1/dca/manual-poll")
 async def api_manual_poll(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ):
     """Manually trigger a poll of the Lamassu database"""
     try:
@@ -237,7 +235,7 @@ async def api_manual_poll(
 
 @satmachineadmin_api_router.post("/api/v1/dca/test-transaction")
 async def api_test_transaction(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
     crypto_atoms: int = 103,
     commission_percentage: float = 0.03,
     discount: float = 0.0,
@@ -303,7 +301,7 @@ async def api_test_transaction(
 
 @satmachineadmin_api_router.get("/api/v1/dca/transactions")
 async def api_get_lamassu_transactions(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> list[StoredLamassuTransaction]:
     """Get all processed Lamassu transactions"""
     return await get_all_lamassu_transactions()
@@ -312,7 +310,7 @@ async def api_get_lamassu_transactions(
 @satmachineadmin_api_router.get("/api/v1/dca/transactions/{transaction_id}")
 async def api_get_lamassu_transaction(
     transaction_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> StoredLamassuTransaction:
     """Get a specific Lamassu transaction with details"""
     transaction = await get_lamassu_transaction(transaction_id)
@@ -328,7 +326,7 @@ async def api_get_lamassu_transaction(
 )
 async def api_get_transaction_distributions(
     transaction_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> list[dict]:
     """Get distribution details for a specific Lamassu transaction"""
     # Get the stored transaction
@@ -371,7 +369,7 @@ async def api_get_transaction_distributions(
 
 @satmachineadmin_api_router.get("/api/v1/dca/config")
 async def api_get_lamassu_config(
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    wallet: WalletTypeInfo = Depends(check_super_user),
 ) -> Optional[LamassuConfig]:
     """Get active Lamassu database configuration"""
     return await get_active_lamassu_config()
@@ -380,7 +378,7 @@ async def api_get_lamassu_config(
 @satmachineadmin_api_router.post("/api/v1/dca/config", status_code=HTTPStatus.CREATED)
 async def api_create_lamassu_config(
     data: CreateLamassuConfigData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ) -> LamassuConfig:
     """Create/update Lamassu database configuration"""
     return await create_lamassu_config(data)
@@ -390,7 +388,7 @@ async def api_create_lamassu_config(
 async def api_update_lamassu_config(
     config_id: str,
     data: UpdateLamassuConfigData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ) -> LamassuConfig:
     """Update Lamassu database configuration"""
     config = await get_lamassu_config(config_id)
@@ -411,7 +409,7 @@ async def api_update_lamassu_config(
 @satmachineadmin_api_router.delete("/api/v1/dca/config/{config_id}")
 async def api_delete_lamassu_config(
     config_id: str,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
+    user: User = Depends(check_super_user),
 ):
     """Delete Lamassu database configuration"""
     config = await get_lamassu_config(config_id)

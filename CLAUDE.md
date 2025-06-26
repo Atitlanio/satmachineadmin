@@ -68,7 +68,8 @@ The Satoshi Machine Admin extension follows LNBits architecture patterns:
    - Use `:attribute='value'` for binding, `v-html='value'` for HTML content
 
 2. **API Patterns**:
-   - Always include wallet key (inkey/adminkey) as third parameter in API calls
+   - Admin extension uses session-based superuser authentication (no API keys)
+   - Client extension uses wallet admin keys for user-specific operations  
    - Use `LNbits.api.request()` for all API calls
    - Destructure responses: `const {data} = await LNbits.api.request(...)`
 
@@ -79,9 +80,11 @@ The Satoshi Machine Admin extension follows LNBits architecture patterns:
 ### The Magical G Object
 The global `this.g` object provides access to:
 - `this.g.user` - Complete user data including wallets array
-- `this.g.user.wallets[0].inkey` - Invoice key for API calls
-- `this.g.user.wallets[0].adminkey` - Admin key for privileged operations
+- `this.g.user.wallets[0].inkey` - Invoice key (client extension only)
+- `this.g.user.wallets[0].adminkey` - Admin key (client extension only)
 - `this.g.wallet` - Currently selected wallet
+
+**Note**: Admin extension uses superuser session authentication, not wallet keys.
 
 ### Built-in Utilities
 - Currency conversion: `/api/v1/currencies`, `/api/v1/conversion`
@@ -208,9 +211,11 @@ commission_amount = 266800 - 258835 = 7,965 sats (to commission wallet)
 - **Error Handling**: Graceful failure with detailed logging
 
 ### Security Considerations
+- **Superuser Authentication**: Admin extension requires LNBits superuser login
+- **Wallet Admin Keys**: Client extension uses wallet admin keys for user operations
+- **Database Access**: Only superusers can write to satoshimachine database
 - SSH tunnel encryption for database connectivity
-- Read-only database permissions
-- Wallet key validation for all financial operations
+- Read-only database permissions for Lamassu access
 - Input sanitization and type validation
 - Audit logging for all administrative actions
 

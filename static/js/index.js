@@ -86,14 +86,14 @@ window.app = Vue.createApp({
         amount: null,
         notes: ''
       },
-      
+
       // Polling status
       lastPollTime: null,
       testingConnection: false,
       runningManualPoll: false,
       runningTestTransaction: false,
       lamassuConfig: null,
-      
+
       // Config dialog
       configDialog: {
         show: false,
@@ -163,13 +163,13 @@ window.app = Vue.createApp({
     // Configuration Methods
     async getLamassuConfig() {
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/config',
-          this.g.user.wallets[0].adminkey
+          null
         )
         this.lamassuConfig = data
-        
+
         // When opening config dialog, populate the selected wallets if they exist
         if (data && data.source_wallet_id) {
           const wallet = this.g.user.wallets.find(w => w.id === data.source_wallet_id)
@@ -188,7 +188,7 @@ window.app = Vue.createApp({
         this.lamassuConfig = null
       }
     },
-    
+
     async saveConfiguration() {
       try {
         const data = {
@@ -207,17 +207,17 @@ window.app = Vue.createApp({
           ssh_password: this.configDialog.data.ssh_password,
           ssh_private_key: this.configDialog.data.ssh_private_key
         }
-        
-        const {data: config} = await LNbits.api.request(
+
+        const { data: config } = await LNbits.api.request(
           'POST',
           '/satmachineadmin/api/v1/dca/config',
-          this.g.user.wallets[0].adminkey,
+          null,
           data
         )
-        
+
         this.lamassuConfig = config
         this.closeConfigDialog()
-        
+
         this.$q.notify({
           type: 'positive',
           message: 'Database configuration saved successfully',
@@ -227,7 +227,7 @@ window.app = Vue.createApp({
         LNbits.utils.notifyApiError(error)
       }
     },
-    
+
     closeConfigDialog() {
       this.configDialog.show = false
       this.configDialog.data = {
@@ -254,9 +254,9 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/clients',
-          this.g.user.wallets[0].adminkey
+          null
         )
-        
+
         // Fetch balance data for each client
         const clientsWithBalances = await Promise.all(
           data.map(async (client) => {
@@ -264,7 +264,7 @@ window.app = Vue.createApp({
               const { data: balance } = await LNbits.api.request(
                 'GET',
                 `/satmachineadmin/api/v1/dca/clients/${client.id}/balance`,
-                this.g.user.wallets[0].adminkey
+                null
               )
               return {
                 ...client,
@@ -279,7 +279,7 @@ window.app = Vue.createApp({
             }
           })
         )
-        
+
         this.dcaClients = clientsWithBalances
       } catch (error) {
         LNbits.utils.notifyApiError(error)
@@ -300,7 +300,7 @@ window.app = Vue.createApp({
         const { data: newDeposit } = await LNbits.api.request(
           'POST',
           '/satmachineadmin/api/v1/dca/deposits',
-          this.g.user.wallets[0].adminkey,
+          null,
           data
         )
 
@@ -328,7 +328,7 @@ window.app = Vue.createApp({
         const { data: balance } = await LNbits.api.request(
           'GET',
           `/satmachineadmin/api/v1/dca/clients/${client.id}/balance`,
-          this.g.user.wallets[0].adminkey
+          null
         )
         this.clientDetailsDialog.data = client
         this.clientDetailsDialog.balance = balance
@@ -344,7 +344,7 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/deposits',
-          this.g.user.wallets[0].adminkey
+          null
         )
         this.deposits = data
       } catch (error) {
@@ -375,7 +375,7 @@ window.app = Vue.createApp({
           const { data: updatedDeposit } = await LNbits.api.request(
             'PUT',
             `/satmachineadmin/api/v1/dca/deposits/${this.depositFormDialog.data.id}`,
-            this.g.user.wallets[0].adminkey,
+            null,
             { status: this.depositFormDialog.data.status, notes: data.notes }
           )
           const index = this.deposits.findIndex(d => d.id === updatedDeposit.id)
@@ -387,7 +387,7 @@ window.app = Vue.createApp({
           const { data: newDeposit } = await LNbits.api.request(
             'POST',
             '/satmachineadmin/api/v1/dca/deposits',
-            this.g.user.wallets[0].adminkey,
+            null,
             data
           )
           this.deposits.unshift(newDeposit)
@@ -419,7 +419,7 @@ window.app = Vue.createApp({
             const { data: updatedDeposit } = await LNbits.api.request(
               'PUT',
               `/satmachineadmin/api/v1/dca/deposits/${deposit.id}/status`,
-              this.g.user.wallets[0].adminkey,
+              null,
               { status: 'confirmed', notes: 'Confirmed by admin - money placed in machine' }
             )
             const index = this.deposits.findIndex(d => d.id === deposit.id)
@@ -454,30 +454,30 @@ window.app = Vue.createApp({
     async exportLamassuTransactionsCSV() {
       await LNbits.utils.exportCSV(this.lamassuTransactionsTable.columns, this.lamassuTransactions)
     },
-    
+
     // Polling Methods
     async testDatabaseConnection() {
       this.testingConnection = true
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'POST',
           '/satmachineadmin/api/v1/dca/test-connection',
-          this.g.user.wallets[0].adminkey
+          null
         )
-        
+
         // Show detailed results in a dialog
         const stepsList = data.steps ? data.steps.join('\n') : 'No detailed steps available'
-        
+
         let dialogContent = `<strong>Connection Test Results</strong><br/><br/>`
-        
+
         if (data.ssh_tunnel_used) {
           dialogContent += `<strong>SSH Tunnel:</strong> ${data.ssh_tunnel_success ? '✅ Success' : '❌ Failed'}<br/>`
         }
-        
+
         dialogContent += `<strong>Database:</strong> ${data.database_connection_success ? '✅ Success' : '❌ Failed'}<br/><br/>`
         dialogContent += `<strong>Detailed Steps:</strong><br/>`
         dialogContent += stepsList.replace(/\n/g, '<br/>')
-        
+
         this.$q.dialog({
           title: data.success ? 'Connection Test Passed' : 'Connection Test Failed',
           message: dialogContent,
@@ -487,37 +487,37 @@ window.app = Vue.createApp({
             label: 'Close'
           }
         })
-        
+
         // Also show a brief notification
         this.$q.notify({
           type: data.success ? 'positive' : 'negative',
           message: data.message,
           timeout: 3000
         })
-        
+
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       } finally {
         this.testingConnection = false
       }
     },
-    
+
     async manualPoll() {
       this.runningManualPoll = true
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'POST',
           '/satmachineadmin/api/v1/dca/manual-poll',
-          this.g.user.wallets[0].adminkey
+          null
         )
-        
+
         this.lastPollTime = new Date().toLocaleString()
         this.$q.notify({
           type: 'positive',
           message: `Manual poll completed. Found ${data.transactions_processed} new transactions.`,
           timeout: 5000
         })
-        
+
         // Refresh data
         await this.getDcaClients() // Refresh to show updated balances
         await this.getDeposits()
@@ -529,19 +529,19 @@ window.app = Vue.createApp({
         this.runningManualPoll = false
       }
     },
-    
+
     async testTransaction() {
       this.runningTestTransaction = true
       try {
-        const {data} = await LNbits.api.request(
+        const { data } = await LNbits.api.request(
           'POST',
           '/satmachineadmin/api/v1/dca/test-transaction',
-          this.g.user.wallets[0].adminkey
+          null
         )
-        
+
         // Show detailed results in a dialog
         const details = data.transaction_details
-        
+
         let dialogContent = `<strong>Test Transaction Results</strong><br/><br/>`
         dialogContent += `<strong>Transaction ID:</strong> ${details.transaction_id}<br/>`
         dialogContent += `<strong>Total Amount:</strong> ${details.total_amount_sats} sats<br/>`
@@ -552,7 +552,7 @@ window.app = Vue.createApp({
           dialogContent += `<strong>Effective Commission:</strong> ${details.effective_commission}%<br/>`
         }
         dialogContent += `<br/><strong>Check your wallets to see the distributions!</strong>`
-        
+
         this.$q.dialog({
           title: 'Test Transaction Completed',
           message: dialogContent,
@@ -562,20 +562,20 @@ window.app = Vue.createApp({
             label: 'Great!'
           }
         })
-        
+
         // Also show a brief notification
         this.$q.notify({
           type: 'positive',
           message: `Test transaction processed: ${details.total_amount_sats} sats distributed`,
           timeout: 5000
         })
-        
+
         // Refresh data
         await this.getDcaClients() // Refresh to show updated balances
         await this.getDeposits()
         await this.getLamassuTransactions()
         await this.getLamassuConfig()
-        
+
       } catch (error) {
         LNbits.utils.notifyApiError(error)
       } finally {
@@ -589,7 +589,7 @@ window.app = Vue.createApp({
         const { data } = await LNbits.api.request(
           'GET',
           '/satmachineadmin/api/v1/dca/transactions',
-          this.g.user.wallets[0].adminkey
+          null
         )
         this.lamassuTransactions = data
       } catch (error) {
@@ -602,9 +602,9 @@ window.app = Vue.createApp({
         const { data: distributions } = await LNbits.api.request(
           'GET',
           `/satmachineadmin/api/v1/dca/transactions/${transaction.id}/distributions`,
-          this.g.user.wallets[0].adminkey
+          null
         )
-        
+
         this.distributionDialog.transaction = transaction
         this.distributionDialog.distributions = distributions
         this.distributionDialog.show = true
@@ -630,20 +630,20 @@ window.app = Vue.createApp({
   computed: {
     isConfigFormValid() {
       const data = this.configDialog.data
-      
+
       // Basic database fields are required
       const basicValid = data.host && data.database_name && data.username && data.selectedWallet
-      
+
       // If SSH tunnel is enabled, validate SSH fields
       if (data.use_ssh_tunnel) {
-        const sshValid = data.ssh_host && data.ssh_username && 
-                        (data.ssh_password || data.ssh_private_key)
+        const sshValid = data.ssh_host && data.ssh_username &&
+          (data.ssh_password || data.ssh_private_key)
         return basicValid && sshValid
       }
-      
+
       return basicValid
     },
-    
+
     clientOptions() {
       return this.dcaClients.map(client => ({
         label: `${client.username || client.user_id.substring(0, 8) + '...'} (${client.dca_mode})`,
