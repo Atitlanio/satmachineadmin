@@ -286,34 +286,6 @@ window.app = Vue.createApp({
       }
     },
 
-    // Test Client Creation (temporary for testing)
-    async createTestClient() {
-      try {
-        const testData = {
-          user_id: this.g.user.id,
-          wallet_id: this.g.user.wallets[0].id,
-          username: this.g.user.username || `user_${this.g.user.id.substring(0, 8)}`,
-          dca_mode: 'flow'
-        }
-
-        const { data: newClient } = await LNbits.api.request(
-          'POST',
-          '/satmachineadmin/api/v1/dca/clients',
-          this.g.user.wallets[0].adminkey,
-          testData
-        )
-
-        this.dcaClients.push(newClient)
-
-        this.$q.notify({
-          type: 'positive',
-          message: 'Test client created successfully!',
-          timeout: 5000
-        })
-      } catch (error) {
-        LNbits.utils.notifyApiError(error)
-      }
-    },
 
     // Quick Deposit Methods
     async sendQuickDeposit() {

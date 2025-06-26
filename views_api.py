@@ -12,7 +12,6 @@ from starlette.exceptions import HTTPException
 
 from .crud import (
     # DCA CRUD operations
-    create_dca_client,
     get_dca_clients,
     get_dca_client,
     update_dca_client,
@@ -36,7 +35,6 @@ from .crud import (
 )
 from .models import (
     # DCA models
-    CreateDcaClientData,
     DcaClient,
     UpdateDcaClientData,
     CreateDepositData,
@@ -85,14 +83,6 @@ async def api_get_dca_client(
 # Admin extension only reads existing clients and manages their deposits
 
 
-# TEMPORARY: Test client creation endpoint (remove in production)
-@satmachineadmin_api_router.post("/api/v1/dca/clients", status_code=HTTPStatus.CREATED)
-async def api_create_test_dca_client(
-    data: CreateDcaClientData,
-    wallet: WalletTypeInfo = Depends(require_admin_key),
-) -> DcaClient:
-    """Create a test DCA client (temporary for testing)"""
-    return await create_dca_client(data)
 
 
 @satmachineadmin_api_router.get("/api/v1/dca/clients/{client_id}/balance")
