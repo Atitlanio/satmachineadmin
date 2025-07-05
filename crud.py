@@ -221,31 +221,46 @@ async def get_payments_by_lamassu_transaction(lamassu_transaction_id: str) -> Li
 
 
 # Balance and Summary Operations
-async def get_client_balance_summary(client_id: str) -> ClientBalanceSummary:
-    # Get total confirmed deposits
+async def get_client_balance_summary(client_id: str, as_of_time: Optional[datetime] = None) -> ClientBalanceSummary:
+    """Get client balance summary, optionally as of a specific point in time"""
+    
+    # Build time filter for temporal accuracy
+    time_filter = ""
+    params = {"client_id": client_id}
+    
+    if as_of_time is not None:
+        time_filter = "AND confirmed_at <= :as_of_time"
+        params["as_of_time"] = as_of_time
+    
+    # Get total confirmed deposits (only those confirmed before the cutoff time)
     total_deposits_result = await db.fetchone(
-        """
+        f"""
         SELECT COALESCE(SUM(amount), 0) as total, currency 
         FROM satoshimachine.dca_deposits 
-        WHERE client_id = :client_id AND status = 'confirmed'
+        WHERE client_id = :client_id AND status = 'confirmed' {time_filter}
         GROUP BY currency
         """,
-        {"client_id": client_id}
+        params
     )
     
-    # Get total payments made
+    # Get total payments made (only those created before the cutoff time)
     total_payments_result = await db.fetchone(
-        """
+        f"""
         SELECT COALESCE(SUM(amount_fiat), 0) as total 
         FROM satoshimachine.dca_payments 
-        WHERE client_id = :client_id AND status = 'confirmed'
+        WHERE client_id = :client_id AND status = 'confirmed' {time_filter}
         """,
-        {"client_id": client_id}
+        params
     )
     
     total_deposits = total_deposits_result["total"] if total_deposits_result else 0
     total_payments = total_payments_result["total"] if total_payments_result else 0
     currency = total_deposits_result["currency"] if total_deposits_result else "GTQ"
+    
+    # Log temporal filtering if as_of_time was used
+    if as_of_time is not None:
+        from lnbits.core.services import logger
+        logger.info(f"Client {client_id[:8]}... balance as of {as_of_time}: {total_deposits - total_payments} centavos remaining")
     
     return ClientBalanceSummary(
         client_id=client_id,

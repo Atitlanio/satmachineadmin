@@ -608,6 +608,7 @@ class LamassuTransactionProcessor:
             fiat_amount = transaction.get("fiat_amount")     # Actual fiat dispensed (principal only)
             commission_percentage = transaction.get("commission_percentage")  # Already stored as decimal (e.g., 0.045)
             discount = transaction.get("discount")  # Discount percentage
+            transaction_time = transaction.get("transaction_time")  # ATM transaction timestamp for temporal accuracy
             
             # Validate required fields
             if crypto_atoms is None:
@@ -622,6 +623,10 @@ class LamassuTransactionProcessor:
             if discount is None:
                 logger.info(f"Missing discount in transaction: {transaction}, defaulting to 0")
                 discount = 0.0
+            if transaction_time is None:
+                logger.warning(f"Missing transaction_time in transaction: {transaction}")
+                # Could use current time as fallback, but this indicates a data issue
+                # transaction_time = datetime.now(timezone.utc)
             
             # Calculate effective commission percentage after discount (following the reference logic)
             if commission_percentage > 0:
@@ -642,13 +647,18 @@ class LamassuTransactionProcessor:
             logger.info(f"Transaction - Total crypto: {crypto_atoms} sats")
             logger.info(f"Commission: {commission_percentage*100:.1f}% - {discount:.1f}% discount = {effective_commission*100:.1f}% effective ({commission_amount_sats} sats)")
             logger.info(f"Base for DCA: {base_crypto_atoms} sats, Fiat dispensed: {fiat_amount}, Exchange rate: {exchange_rate:.2f} sats/fiat_unit")
+            if transaction_time:
+                logger.info(f"Calculating balances as of transaction time: {transaction_time}")
+            else:
+                logger.warning("No transaction time available - using current balances (may be inaccurate)")
             
             # Get balance summaries for all clients to calculate proportions
             client_balances = {}
             total_confirmed_deposits = 0
             
             for client in flow_clients:
-                balance = await get_client_balance_summary(client.id)
+                # Get balance as of the transaction time for temporal accuracy
+                balance = await get_client_balance_summary(client.id, as_of_time=transaction_time)
                 if balance.remaining_balance > 0:  # Only include clients with remaining balance
                     client_balances[client.id] = balance.remaining_balance
                     total_confirmed_deposits += balance.remaining_balance
