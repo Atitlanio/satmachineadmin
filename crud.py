@@ -260,7 +260,9 @@ async def get_client_balance_summary(client_id: str, as_of_time: Optional[dateti
     # Log temporal filtering if as_of_time was used
     if as_of_time is not None:
         from lnbits.core.services import logger
-        logger.info(f"Client {client_id[:8]}... balance as of {as_of_time}: {total_deposits - total_payments} centavos remaining")
+        # Verify timezone consistency for temporal filtering
+        tz_info = "UTC" if as_of_time.tzinfo == timezone.utc else f"TZ: {as_of_time.tzinfo}"
+        logger.info(f"Client {client_id[:8]}... balance as of {as_of_time} ({tz_info}): {total_deposits - total_payments} centavos remaining")
     
     return ClientBalanceSummary(
         client_id=client_id,

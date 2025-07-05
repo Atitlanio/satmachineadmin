@@ -503,7 +503,16 @@ class LamassuTransactionProcessor:
                                 processed_row[key] = float(value) if value else 0.0
                             elif key == 'transaction_time':
                                 from datetime import datetime
-                                processed_row[key] = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                                # Parse timestamp and ensure it's in UTC for consistency
+                                dt = datetime.fromisoformat(value.replace('Z', '+00:00'))
+                                # Convert to UTC if not already
+                                if dt.tzinfo is None:
+                                    # Assume UTC if no timezone info
+                                    dt = dt.replace(tzinfo=timezone.utc)
+                                elif dt.tzinfo != timezone.utc:
+                                    # Convert to UTC
+                                    dt = dt.astimezone(timezone.utc)
+                                processed_row[key] = dt
                             else:
                                 processed_row[key] = value
                         results.append(processed_row)
@@ -609,6 +618,18 @@ class LamassuTransactionProcessor:
             commission_percentage = transaction.get("commission_percentage")  # Already stored as decimal (e.g., 0.045)
             discount = transaction.get("discount")  # Discount percentage
             transaction_time = transaction.get("transaction_time")  # ATM transaction timestamp for temporal accuracy
+            
+            # Normalize transaction_time to UTC if present
+            if transaction_time is not None:
+                if transaction_time.tzinfo is None:
+                    # Assume UTC if no timezone info
+                    transaction_time = transaction_time.replace(tzinfo=timezone.utc)
+                    logger.warning("Transaction time was timezone-naive, assuming UTC")
+                elif transaction_time.tzinfo != timezone.utc:
+                    # Convert to UTC
+                    original_tz = transaction_time.tzinfo
+                    transaction_time = transaction_time.astimezone(timezone.utc)
+                    logger.info(f"Converted transaction time from {original_tz} to UTC")
             
             # Validate required fields
             if crypto_atoms is None:
@@ -718,7 +739,7 @@ class LamassuTransactionProcessor:
                         exchange_rate=distribution["exchange_rate"],
                         transaction_type="flow",
                         lamassu_transaction_id=transaction_id,
-                        transaction_time=transaction.get("transaction_time")  # Original ATM transaction time
+                        transaction_time=transaction_time  # Normalized UTC timestamp
                     )
                     
                     # Record the payment in our database
@@ -893,7 +914,7 @@ class LamassuTransactionProcessor:
                 crypto_code=transaction.get("crypto_code", "BTC"),
                 fiat_code=transaction.get("fiat_code", "GTQ"),
                 device_id=transaction.get("device_id"),
-                transaction_time=transaction.get("transaction_time")
+                transaction_time=transaction_time  # Normalized UTC timestamp
             )
             
             # Store in database
